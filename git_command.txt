@@ -1,3 +1,6 @@
 查看某个版本的文件内容
 git show 872873:file
 git show HEAD~4:file
+
+两个版本之间修改过的文件
+git diff --name-only hash1 hash2 | sort | uniq -c
