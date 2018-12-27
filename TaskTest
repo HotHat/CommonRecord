@@ -1,0 +1,145 @@
+<?php
+
+$t1 = 'a1';
+
+$t2 = 'b1';
+
+$t3 = [
+    'c111',
+    'c222',
+    'c333',
+    'c444'
+];
+
+$t4 = [
+    'd1',
+    'd2',
+    'd3',
+    'd4',
+    'd5'
+];
+
+$t5 = [
+    'f1',
+    'f2',
+    'f3',
+    'f4',
+    'f5'
+];
+
+$t6 = [
+    't1',
+    't2',
+    't3',
+    't4',
+    't5'
+];
+
+function f1($data) {
+    yield;
+    echo $data . PHP_EOL;
+    yield;
+}
+
+function f2($data) {
+    yield;
+    foreach ($data as $item) {
+        echo $item . PHP_EOL;
+        yield;
+    }
+    yield;
+}
+
+function f3($data) {
+    yield;
+    while ($data->valid()) {
+        $data->next();
+        yield;
+    }
+
+    yield;
+}
+
+function f4($data) {
+    yield;
+    while (true) {
+        foreach ($data as $key => $item) {
+            if ($item->valid()) {
+                $item->next();
+            }
+            yield;
+        }
+        yield;
+    }
+
+    yield;
+}
+
+
+$a1 = new Task(Task::create($t1, function($item){echo $item . PHP_EOL;}));
+$a11 = new Task(Task::create($t1, function($item){echo $item . PHP_EOL;}));
+$a2 = new Task(Task::create($t2, function($item){echo $item . PHP_EOL;}));
+$a22 = new Task(Task::create($t2, function($item){echo $item . PHP_EOL;}));
+
+$at5 = new Task(Task::fromArray($t5, function($item){echo $item . PHP_EOL;}));
+$at4 = new Task(Task::fromArray($t4, function($item){echo $item . PHP_EOL;}));
+$at6 = new Task(Task::fromArray($t6, function($item){echo $item . PHP_EOL;}));
+
+$tt = new Task(Task::fromTaskArray([$at5, $at4, $at6]));
+$tt->run();
+
+// $a3 = new Task(Task::fromArray($t3, function($item){echo $item . PHP_EOL;}));
+// $a33 = new Task(Task::fromArray($t3, function($item){echo $item . PHP_EOL;}));
+//
+// $a4 = new Task(Task::fromArray($t4, function($item){echo $item . PHP_EOL;}));
+// $a44 = new Task(Task::fromArray($t4, function($item){echo $item . PHP_EOL;}));
+// $a5 = new Task(Task::fromArray($t5, function($item){echo $item . PHP_EOL;}));
+//
+// $b1 = Task::fromTask($a1);
+// $b2 = Task::fromTaskArray([$a1, $a2]);
+// $b22 = Task::fromTaskArray([$a11, $a2]);
+//
+// $b3 = Task::fromTaskArray([$a3, $a4]);
+// $b33 = Task::fromTaskArray([$b2, $b3]);
+//
+// $c1 = new Task($b1);
+// $c2 = new Task($b2);
+// $c3 = new Task($b3);
+// $c4 = new Task($b33);
+//
+// $c4->run();
+// echo $b1->valid();
+// echo $c1->valid();
+// while (true) {
+//     // $b1->next();
+//     // $b2->next();
+//     // $b3->next();
+//     // $c1->next();
+//     // $c2->next();
+//     // $c3->next();
+//     if ($c4->valid()) {
+//         $c4->next();
+//     } else {
+//         break;
+//     }
+//
+// }
+
+
+
+
+// $a1 = new Task($d1, function ($item) { echo $item . "\n";});
+// $a2 = new Task($d2, function ($item) { echo $item . "\n";});
+
+// foreach ([1,2,3,4,5] as $item) {
+//     $a1->run();
+//     $a2->run();
+// }
+
+// $a1 = new Task($data, function ($item) { echo $item . "\n";});
+// $a2 = new Task($data2, function ($item) { echo $item . "\n";});
+//
+// foreach ([1,2,3,4,5] as $item) {
+//     $a1->next();
+//     $a2->next();
+// }
