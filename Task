@@ -1,0 +1,124 @@
+<?php
+/**
+ * User: lyhux
+ * Date: 2018/12/25
+ * Time: 16:42
+ *　　　　　　　　┏┓　　　┏┓+ +
+ *　　　　　　　┏┛┻━━━┛┻┓ + +
+ *　　　　　　　┃　　　　　　　┃ 　
+ *　　　　　　　┃　　　━　　　┃ ++ + + +
+ *　　　　　　 ████━████ ┃+
+ *　　　　　　　┃　　　　　　　┃ +
+ *　　　　　　　┃　　　┻　　　┃
+ *　　　　　　　┃　　　　　　　┃ + +
+ *　　　　　　　┗━┓　　　┏━┛
+ *　　　　　　　　　┃　　　┃　　　　　　　　　　　
+ *　　　　　　　　　┃　　　┃ + + + +
+ *　　　　　　　　　┃　　　┃　　　　Code is far away from bug with the animal protecting　　　　　　　
+ *　　　　　　　　　┃　　　┃ + 　　　　神兽保佑,代码无bug　　
+ *　　　　　　　　　┃　　　┃
+ *　　　　　　　　　┃　　　┃　　+　　　　　　　　　
+ *　　　　　　　　　┃　 　　┗━━━┓ + +
+ *　　　　　　　　　┃ 　　　　　　　┣┓
+ *　　　　　　　　　┃ 　　　　　　　┏┛
+ *　　　　　　　　　┗┓┓┏━┳┓┏┛ + + + +
+ *　　　　　　　　　　┃┫┫　┃┫┫
+ *　　　　　　　　　　┗┻┛　┗┻┛+ + + +
+ */
+
+namespace App\Libraries;
+
+
+class Task
+{
+    private $jobs;
+    private $isArray;
+
+    public function __construct($jobs)
+    {
+        $this->jobs = $jobs;
+
+        $this->isArray = is_array($jobs);
+
+    }
+
+    public function valid() {
+        if ($this->isArray) {
+            return !empty($this->jobs);
+        } else {
+            return $this->jobs->valid();
+        }
+    }
+
+    public function next() {
+
+        if ($this->isArray) {
+            foreach ($this->jobs as $key => $item) {
+                if ($item->valid()) {
+                    $item->next();
+                } else {
+                    unset($this->jobs[$key]);
+                }
+            }
+        } else {
+            if ($this->jobs->valid()) {
+                $this->jobs->next();
+            }
+        }
+
+    }
+
+    public function run() {
+        while (true) {
+            if ($this->valid()) {
+                $this->next();
+            } else {
+                break;
+            }
+
+        }
+    }
+
+    static public function create($data, callable $fun) {
+        yield;
+        call_user_func($fun, $data);
+    }
+
+    static public function fromArray($data, callable $fun) {
+        yield;
+        foreach ($data as $item) {
+            call_user_func($fun, $item);
+            yield;
+        }
+    }
+
+    static public function fromTask($atom) {
+        yield;
+        while ($atom->valid()) {
+            $atom->next();
+            yield;
+        }
+    }
+
+    static public function fromTaskArray($atomArray) {
+        yield;
+        while (true) {
+            foreach ($atomArray as $key => $item) {
+                if ($item->valid()) {
+                    $item->next();
+                } else {
+                    unset($atomArray[$key]);
+                }
+                yield;
+            }
+
+            if (empty($atomArray)) {
+                break;
+            }
+
+            yield;
+        }
+    }
+
+
+}
