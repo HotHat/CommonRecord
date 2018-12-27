@@ -1,0 +1,90 @@
+<?php
+/**
+ * Created by cncn.com.
+ * User: lyhux
+ * Date: 2018/12/27
+ * Time: 9:15
+ *　　　　　　　　┏┓　　　┏┓+ +
+ *　　　　　　　┏┛┻━━━┛┻┓ + +
+ *　　　　　　　┃　　　　　　　┃ 　
+ *　　　　　　　┃　　　━　　　┃ ++ + + +
+ *　　　　　　 ████━████ ┃+
+ *　　　　　　　┃　　　　　　　┃ +
+ *　　　　　　　┃　　　┻　　　┃
+ *　　　　　　　┃　　　　　　　┃ + +
+ *　　　　　　　┗━┓　　　┏━┛
+ *　　　　　　　　　┃　　　┃　　　　　　　　　　　
+ *　　　　　　　　　┃　　　┃ + + + +
+ *　　　　　　　　　┃　　　┃　　　　Code is far away from bug with the animal protecting　　　　　　　
+ *　　　　　　　　　┃　　　┃ + 　　　　神兽保佑,代码无bug　　
+ *　　　　　　　　　┃　　　┃
+ *　　　　　　　　　┃　　　┃　　+　　　　　　　　　
+ *　　　　　　　　　┃　 　　┗━━━┓ + +
+ *　　　　　　　　　┃ 　　　　　　　┣┓
+ *　　　　　　　　　┃ 　　　　　　　┏┛
+ *　　　　　　　　　┗┓┓┏━┳┓┏┛ + + + +
+ *　　　　　　　　　　┃┫┫　┃┫┫
+ *　　　　　　　　　　┗┻┛　┗┻┛+ + + +
+ */
+
+namespace App\Models\spider;
+
+
+use App\Libraries\Task;
+
+class EvenDriven
+{
+    private $type = [];
+
+    public function __construct()
+    {
+
+    }
+
+    public function dispatch(callable $do) {
+
+        $type = array_keys($this->type);
+
+        $data = $this->getData($type);
+
+        while (!$this->isEmpty($data)) {
+            foreach ($data as $item) {
+                $tmp[] = Task::fromArray($item, $do);
+            }
+            $task = new Task(Task::fromTaskArray($tmp));
+            $task->run();
+
+            $data = $this->getData($type);
+        }
+    }
+
+    public function isEmpty(array $data) {
+
+        foreach ($data as $item) {
+            if (!empty($item)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public function register(int $type, callable $fun) {
+        $this->type[$type] = $fun;
+    }
+
+
+    public function getData(array $type)
+    {
+        $result = [];
+        foreach ($type as $item) {
+            if (isset($this->type[$item])) {
+                $fun = $this->type[$item];
+                $result[] = call_user_func($fun);
+            }
+        }
+
+        return $result;
+
+    }
+    
+}
