@@ -1,0 +1,95 @@
+<?php
+/**
+ * Created by cncn.com.
+ * User: lyhux
+ * Date: 2018/12/27
+ * Time: 9:26
+ *　　　　　　　　┏┓　　　┏┓+ +
+ *　　　　　　　┏┛┻━━━┛┻┓ + +
+ *　　　　　　　┃　　　　　　　┃ 　
+ *　　　　　　　┃　　　━　　　┃ ++ + + +
+ *　　　　　　 ████━████ ┃+
+ *　　　　　　　┃　　　　　　　┃ +
+ *　　　　　　　┃　　　┻　　　┃
+ *　　　　　　　┃　　　　　　　┃ + +
+ *　　　　　　　┗━┓　　　┏━┛
+ *　　　　　　　　　┃　　　┃　　　　　　　　　　　
+ *　　　　　　　　　┃　　　┃ + + + +
+ *　　　　　　　　　┃　　　┃　　　　Code is far away from bug with the animal protecting　　　　　　　
+ *　　　　　　　　　┃　　　┃ + 　　　　神兽保佑,代码无bug　　
+ *　　　　　　　　　┃　　　┃
+ *　　　　　　　　　┃　　　┃　　+　　　　　　　　　
+ *　　　　　　　　　┃　 　　┗━━━┓ + +
+ *　　　　　　　　　┃ 　　　　　　　┣┓
+ *　　　　　　　　　┃ 　　　　　　　┏┛
+ *　　　　　　　　　┗┓┓┏━┳┓┏┛ + + + +
+ *　　　　　　　　　　┃┫┫　┃┫┫
+ *　　　　　　　　　　┗┻┛　┗┻┛+ + + +
+ */
+
+use App\Models\spider\EvenDriven;
+
+include(__DIR__."/../../../vendor/autoload.php");
+
+
+function a() {
+    return [
+        'a1',
+        'a2',
+        'a3',
+        'a4',
+        'a5',
+
+    ];
+}
+
+function b() {
+    return [
+        'b1',
+        'b2',
+        'b3',
+        'b4',
+        'b5',
+
+    ];
+}
+
+function c() {
+    return [
+        'c1',
+        'c2',
+        'c3',
+        'c4',
+        'c5',
+    ];
+}
+
+function d() {
+    return [
+        'd1',
+        'd2',
+        'd3',
+        'd4',
+        'd5',
+    ];
+}
+
+
+
+
+$event = new EvenDriven();
+
+$event->register(1, 'a');
+$event->register(2, 'b');
+$event->register(3, 'c');
+$event->register(4, 'd');
+
+// $data = $event->getData([6, 7]);
+
+// var_dump($event->isEmpty($data));
+function update($param) {
+    echo 'updated!' . $param .PHP_EOL;
+}
+
+$event->dispatch(function ($item) { echo $item . PHP_EOL; call_user_func('update', $item) ;});
+
