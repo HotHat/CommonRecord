@@ -1,0 +1,377 @@
+#lang racket
+
+(require racket/date)
+;(require racket/list-new)
+
+(define TOP 1)
+(define DOWN 0)
+(define g-v 360)
+
+
+;; fraciton number
+(struct fraction (num den ratio) #:transparent)
+
+(struct g-number (a b c) #:transparent)
+
+
+(struct cake-piece (color size) #:transparent)
+
+(struct cake-number (con mult root glob) #:transparent)
+
+(define (make-cake-number g a b c)
+  (values (cake-number (* a b c) 0 c (/ g (* a b c)))
+          (cake-number (* b c)   0 c (/ g (* a b c)))
+          (cake-number (* a c)   0 c (/ g (* a b c)))
+          (cake-number 0   (* a b) c (/ g (* a b c)))))
+
+
+
+(define (v- a b)
+  (cake-number (- (cake-number-con a)
+                  (cake-number-con b))
+               (- (cake-number-mult a)
+                  (cake-number-mult b))
+               (cake-number-root a)
+               (cake-number-glob a)))
+
+(define (v+ a b)
+  (cake-number (+ (cake-number-con a)
+                  (cake-number-con b))
+               (+ (cake-number-mult a)
+                  (cake-number-mult b))
+               (cake-number-root a)
+               (cake-number-glob a)))
+
+(define (v= a b)
+  (let* ([v (v- a b)]
+         [c (cake-number-con v)]
+         [m (cake-number-mult v)]
+         [r (cake-number-root v)])
+    (or (and (= c 0)
+             (= m 0))
+        (and (or (and (> c 0) (< m 0))
+                 (and (< c 0) (> m 0)))
+             (= (- (* c c) (* m m r)) 0)))))
+
+(define (v> a b)
+  (let* ([v (v- a b)]
+         [c (cake-number-con v)]
+         [m (cake-number-mult v)]
+         [r (cake-number-root v)])
+    (cond
+      [(and (= c 0) (= m 0))
+       #f]
+      [(or (and (> c 0) (> m 0))
+           (and (> c 0) (= m 0))
+           (and (= c 0) (> m 0)))
+       #t]
+      [(or (and (< c 0) (< m 0))
+           (and (< c 0) (= m 0))
+           (and (= c 0) (< m 0)))
+       #f]
+      [(and (> c 0) (< m 0))
+       (> (- (* c c) (* m m r)) 0)]
+      [(and (< c 0) (> m 0))
+       (> (- (* m m r) (* c c)) 0)])))
+
+(define make-v make-cake-number)
+
+
+
+
+(define (println a)
+  (display a)
+  (display #\newline))
+
+
+
+;(let-values ([(g x y z) (make-v 11 12 13)])
+;  (println x)
+;  (println y)
+;  (println z)
+;  (let ([tmp g])
+;    (println tmp)
+;    (set! tmp (v- g x))
+;    (println tmp)
+;    (set! tmp (v- tmp y))
+;    (println tmp)
+;    (set! tmp (v- tmp z))
+;    (println tmp)
+;    (set! tmp (v- tmp x))
+;    (println tmp)))
+
+
+
+
+(define upsize-down
+  (lambda (piece)
+    (cake-piece
+     (if (eq? (cake-piece-color piece) TOP)
+         DOWN
+         TOP)
+     (cake-piece-size piece))))
+
+;(define flip
+;  (lambda (lst)
+;    (letrec [(iter (lambda (items result)
+;                  (cond
+;                    [(null? items) result]
+;                    [else
+;                     (let [(head (car items))]
+;                       (iter (cdr items)
+;                             (cons head result)))])))]
+;      (let [(items (iter lst '()))]
+;        ;(display items)
+;        (map (lambda (item)
+;               (upsize-down item))
+;             items)))))
+
+(define flip
+  (lambda (lst)
+    (map (lambda (item)
+           (upsize-down item))
+         (reverse lst))))
+
+
+;(define split
+;  (lambda (cake val)
+;    (let* ([head (car cake)]
+;           [size (cake-piece-size head)])
+;      (cond [(= size val)
+;             (append  (cdr cake) (list (upsize-down head)))]
+;            [(> size val)
+;             (append (cons (cake-piece (cake-piece-color head) (- (cake-piece-size head) val))
+;                             (cdr cake))
+;                     (list (upsize-down (cake-piece (cake-piece-color head) val))))]
+;            [else
+;             (cons head (split (cdr cake) (- val (cake-piece-size head))))]))))
+
+;(define op= =)
+;(define op> >)
+;(define op- -)
+;(define op+ +)
+(define op= v=)
+(define op> v>)
+(define op- v-)
+(define op+ v+)
+
+
+(define split-iter
+  (lambda (cake val)
+    ;(print cake)
+    ;(print val)
+    (let* ([head (car cake)]
+           [size (cake-piece-size head)])
+      (cond [(op= size val)
+             ;(print-compare "====" size val)
+             ;(print "========")
+             (values (list  head) (cdr cake))]
+            [(op> size val)
+             ;(print-compare ">>>>" size val)
+              ;(print ">>>>>>>")
+             (values (list (cake-piece (cake-piece-color head) val))
+                     (cons (cake-piece (cake-piece-color head) (op- (cake-piece-size head) val))
+                           (cdr cake)))]
+            [else
+             ;(print-compare "<<<<" size val)
+              ;(print "<<<<<<<")
+             (let-values ([(x y)  (split-iter (cdr cake) (op- val (cake-piece-size head)))])              
+               (values (cons head x) y))]))))
+
+(define all-up
+  (lambda (lst)
+    (let ([f (filter (lambda (x)
+                       (eq? (cake-piece-color x) TOP))
+                     lst)])
+      (eq? (length lst) (length f)))))
+
+(define merge-iter
+  (lambda (lst dst)
+    (cond
+      [(null? lst)
+       dst]
+      [else
+       (let ([head (car lst)])
+         (if (or (null? dst) (not (= (cake-piece-color (car dst)) (cake-piece-color head))))
+             (merge-iter (cdr lst) (cons head dst))
+             (merge-iter (cdr lst)
+                    (cons (cake-piece (cake-piece-color head)
+                                (op+ (cake-piece-size head)
+                                     (cake-piece-size (car dst))))
+                          (cdr dst)))))])))
+(define merge
+  (lambda (lst)
+    (let ([dst (merge-iter lst '())])
+      (reverse dst))))
+
+;(define two  (list  (cake-piece DOWN 33) (cake-piece TOP 10) (cake-piece TOP 20)  (cake-piece DOWN 10)  (cake-piece DOWN 40) (cake-piece TOP 340)))
+;(display (merge two))
+;(flip two)
+;(split-iter cake 10)
+;(split-iter cake 360)
+
+(define split
+  (lambda (cake val)
+    (let-values ([(x y) (split-iter cake val)])
+      ;(flip x))
+      (let* ([cat (append y (flip x))]
+            [rst (merge cat)])
+        ;(display "Before: ") (print (length cat))
+        ;(print-lst cat)
+        ;(display "After: ") (print (length rst))
+        ;(print-lst rst)
+        ;(print (length rst))
+        ;(test-error cat)
+        rst))))
+
+;(define merge-piece
+;  (lambda (lst)
+;    (letrec ([iter (lambda (items)
+;                  (if (null? (car items))
+;                      0
+;                      (+ (cake-piece-size (car items)) (iter (cdr items)))))])
+;    (let([size (iter lst)])
+;      (if (= size 0)
+;          lst
+;          (cake-piece (cake-piece-color (car lst)) size))))))
+
+
+
+;(split two 40)
+;(all-up cake)
+;(all-up two)
+
+
+(define run-make
+  (lambda (x y z cake count)
+    (let ([x-s (split cake x)])
+      ;(display x-s)
+      ;(print x-s)
+      (if (all-up x-s)
+          (+ 1 count)
+          (let ([y-s (split x-s y)])
+            (if (all-up y-s)
+                (+ 2 count)
+                (let ([z-s (split y-s z)])
+                  (if (all-up z-s)
+                      (+ 3 count)
+                      (run-make x y z z-s (+ 3 count))))))))))
+;(run x y z cake 0)
+
+(define run
+  (lambda (x y z)
+    (let-values ([(g x y z) (make-v g-v x y z)])
+      ;(print g)
+      ;(print x)
+      ;(print y)
+      ;(print z)
+      (run-make x y z (list (cake-piece TOP g)) 0))))
+
+(define test-error
+  (lambda (dst)
+    (letrec ([iter (lambda (lst a b c)
+                     (if (null? lst)
+                         (if (and (= (* g-v 9) a)
+                                  (= b 0)
+                                  (= c 0))
+                             (void)
+                             (begin
+                               (print dst)
+                               (print a)
+                               (print b)
+                               (print c)
+                               (error "Not Match")))
+                         (iter (cdr lst)
+                               (+ a (fraction-num (g-number-a (cake-piece-size (car lst)))))
+                               (+ b (fraction-num (g-number-b (cake-piece-size (car lst)))))
+                               (+ c (fraction-num (g-number-c (cake-piece-size (car lst))))))))])
+      (iter dst 0 0 0))))
+                            
+
+;(run x y z cake 0)
+(define print
+  (lambda (x)
+    (display x)
+    (display #\newline)))
+
+(define print-compare
+  (lambda (s a b)
+    (display "{ ")
+    (display s)
+    (display " ")
+    (print-number a)
+    (display " ")
+    (print-number b)
+    (print "}")))
+
+(define print-number
+  (lambda (item)
+    (display "(")
+    (display (cake-number-con item))
+    (display " ")
+    (display (cake-number-mult item))
+    (display ")")))
+
+(define print-piece
+  (lambda (item)
+    (let ([a (cake-piece-size item)])
+         (display "(")
+         (display (cake-number-con a))
+         (display " ")
+         (display (cake-number-mult a))
+         (display " ")
+         (if (= (cake-piece-color item) TOP)
+             (display " T")
+             (display " D"))
+         (display ") "))))
+
+(define print-lst
+  (lambda (lst)
+    (cond
+      [(null? lst) (display #\newline)]
+      [else
+       (let ([h (car lst)])
+         (print-piece h)
+         (print-lst (cdr lst)))])))
+
+(define print-date
+  (lambda ()
+    (let ([d (current-date)])
+      (print (list->string (list (date-year d) (date-month d)))))))
+
+
+;(define test-a (cake-number 209 0 11 (/ 4 11)))
+;(define test-b (cake-number -781 90 11 (/ 4 11)))
+;(print (v> test-a test-b))
+
+;(run 6 6 6)
+;(run 11 12 13)
+;(run 9 10 11)
+;(run 10 14 16)
+;(run 15 16 17)
+;(run 19 22 24)
+;(run 9 10 28)
+
+
+
+;(define test (combinations (range 9 54) 3))
+(define (sort-f a b)
+  (or (< (car a) (car b))
+      (and (= (car a) (car b))
+           (< (cadr a) (cadr b)))
+      (and (= (car a) (car b))
+           (= (cadr a) (cadr b))
+           (< (caddr a) (caddr b)))))
+
+(define test (remove '(9 10 28) (sort (combinations (range 9 54) 3) sort-f)))
+;(display test)
+;;
+;;;
+(foldr + 0 (map (lambda (x)
+                  (print x)
+                  (flush-output)
+                  (let ([count (run (car x) (cadr x) (caddr x))])
+                    (print count)
+                    (flush-output)
+                    count))
+                  test))
