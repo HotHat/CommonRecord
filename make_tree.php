@@ -22,16 +22,15 @@ $perms = [
 ];
 
 
-class A {
+class PermNode{
     public $id;
-    public $items;
-//    public $child;
-
+    public $item;
+    public $child;
     public function __construct($id)
     {
         $this->id = $id;
-        $this->items = [];
-//        $this->child = null;
+        $this->item = [];
+        $this->child = [];
     }
 }
 
