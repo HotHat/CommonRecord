@@ -41,22 +41,18 @@ foreach ($perms as $item) {
     $pid = $item['parent_id'];
     $cid = $item['id'];
 
-    if (!isset($parent[$pid])) {
-        $parent[$pid] = new A($pid);
-        $parent[$cid] = new A($cid);
-        $parent[$pid]->items[$cid] = &$parent[$cid];
-//        $parent[$pid]->child = &$parent[$cid];
-
-    } else {
-
-        if (!isset($parent[$cid])) {
-            $parent[$cid] = new A($cid);
-        }
-
-        $parent[$pid]->items[$cid] = &$parent[$cid];
-//        $parent[$pid]->child = &$parent[$cid];
-
+   if (!isset($parent[$pid])) {
+        $parent[$pid] = new PermNode($pid);
     }
+
+    if (!isset($parent[$cid])) {
+        $parent[$cid] = new PermNode($cid);
+    }
+
+    $parent[$cid]->item = $item;
+
+    $parent[$pid]->child[$cid] = &$parent[$cid];
+
 }
 
 print_r($parent);
