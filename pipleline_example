@@ -1,18 +1,20 @@
+<?php
+
 $t = 1;
 $ttt = [
-    function($request, $next) {
+    function($request, $next) { // fun002
         global $t;
         $request = $request . $t;
         echo $t++, $request, PHP_EOL;
        $next($request);
     },
-    function($request, $next) {
+    function($request, $next) { // fun003
         global $t;
         $request = $request . $t;
         echo $t++, $request, PHP_EOL;
         $next($request);
     },
-    function($request, $next) {
+    function($request, $next) { // fun004
         global $t;
         $request = $request . $t;
         echo $t++, $request, PHP_EOL;
@@ -24,10 +26,27 @@ $result = array_reduce($ttt, function($carry, $item) {
             $item($param, $carry);
     };
 
-}, function($item) {
-    echo 'init';
+}, function($item) {  // fun001
+    echo 'destination';
     echo $item, PHP_EOL;
 });
 
 
 $result('request');
+
+/*
+function ($param) {   // fun1001
+    fun002($param, fun001);
+}
+
+function ($param) {   // fun1002
+    fun003($param, fun1001);
+}
+
+function ($param) {   // fun1003
+    fun004($param, fun1002);
+}
+
+
+$result = fun1003('request');
+*/
