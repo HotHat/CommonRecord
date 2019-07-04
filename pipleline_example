@@ -1,0 +1,33 @@
+$t = 1;
+$ttt = [
+    function($request, $next) {
+        global $t;
+        $request = $request . $t;
+        echo $t++, $request, PHP_EOL;
+       $next($request);
+    },
+    function($request, $next) {
+        global $t;
+        $request = $request . $t;
+        echo $t++, $request, PHP_EOL;
+        $next($request);
+    },
+    function($request, $next) {
+        global $t;
+        $request = $request . $t;
+        echo $t++, $request, PHP_EOL;
+        $next($request);
+    } ];
+
+$result = array_reduce($ttt, function($carry, $item) {
+    return function($param) use ($carry, $item) {
+            $item($param, $carry);
+    };
+
+}, function($item) {
+    echo 'init';
+    echo $item, PHP_EOL;
+});
+
+
+$result('request');
