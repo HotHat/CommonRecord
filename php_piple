@@ -1,0 +1,76 @@
+class Take{
+    private $result;
+
+    public static function make() {
+        $param = func_get_args();
+        return new Take($param);
+    }
+    public function __construct($param)
+    {
+        $this->result = $param;
+    }
+
+    public function get() {
+        return $this->result[0];
+    }
+    public function pip() {
+        $params = func_get_args();
+
+        $fun = $params[0];
+        $next_params = array_slice($params, 1, count($params)-1);
+
+        $text = false;
+        $pre_result = $this->result;
+
+        $next_params = array_map(function($it) use (&$text, $pre_result){
+            preg_match('/&(\d+)/', $it, $match);
+            if(!empty($match)) {
+                $text = true;
+                return $pre_result[$match[1] - 1];
+            }
+            return $it;
+        }, $next_params);
+
+        if (!$text) {
+            $next_params = array_merge($pre_result, $next_params);
+        }
+
+        $this->result = [call_user_func($fun, ...$next_params)];
+        return $this;
+    }
+}
+
+
+$sub_domain = Take::make('https://blog.sebastiaanluca.com/')
+                    ->pip('parse_url', PHP_URL_HOST)
+                    ->pip('explode', '.', '&1')
+                    ->get();
+
+var_dump($sub_domain);
+
+$sub_domain = Take::make('.', 'blog.sebastiaanluca.com')
+    // ->pip('parse_url', PHP_URL_HOST)
+    ->pip('explode', '&1', '&2')
+    ->get();
+
+var_dump($sub_domain);
+
+
+function add($a, $b) {
+    return $a + $b;
+}
+function sub($a, $b) {
+    return $a - $b;
+}
+function mul($a, $b) {
+    return $a * $b;
+}
+
+// (1 + 1 - 3) * 5
+$sum = Take::make(1, 2)
+    ->pip('add', 5, '&2')
+    ->pip('sub', '&1', 3)
+    ->pip('mul', 5)
+    ->get();
+
+var_dump($sum);
