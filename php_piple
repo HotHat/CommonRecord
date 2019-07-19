@@ -1,59 +1,80 @@
 class Take{
+    const SUCCESS = 0;
+    const ERROR   = 1;
+
     private $result;
 
-    public static function make() {
-        $param = func_get_args();
+    public static function make($param) {
         return new Take($param);
     }
     public function __construct($param)
     {
-        $this->result = $param;
+        $this->result = [self::SUCCESS, $param];
     }
 
     public function get() {
-        return $this->result[0];
+        return $this->result;
     }
+
     public function pip() {
         $params = func_get_args();
+
+        [$code, $result] = $this->result;
+        if ($code == self::ERROR) {
+            return $this;
+        }
 
         $fun = $params[0];
         $next_params = array_slice($params, 1, count($params)-1);
 
         $text = false;
-        $pre_result = $this->result;
 
-        $next_params = array_map(function($it) use (&$text, $pre_result){
-            preg_match('/&(\d+)/', $it, $match);
+
+        foreach ($next_params as &$item) {
+            preg_match('/^\$\$$/', $item, $match);
+
             if(!empty($match)) {
                 $text = true;
-                return $pre_result[$match[1] - 1];
-            }
-            return $it;
-        }, $next_params);
 
-        if (!$text) {
-            $next_params = array_merge($pre_result, $next_params);
+                $item = $result;
+            }
         }
 
-        $this->result = [call_user_func($fun, ...$next_params)];
+        if (!$text) {
+            $next_params = array_merge([$result], $next_params);
+        }
+
+        // callable
+        if ($fun instanceof Closure) {
+            $this->result = [self::SUCCESS, $fun(...$next_params)];
+            return $this;
+        }
+
+        if (function_exists($fun)) {
+            $this->result = [self::SUCCESS, call_user_func($fun, ...$next_params)];
+        } else {
+            $message = 'Without function: ' . $fun;
+            $this->result = [self::ERROR, $message];
+        }
+
         return $this;
     }
 }
 
 
-$sub_domain = Take::make('https://blog.sebastiaanluca.com/')
-                    ->pip('parse_url', PHP_URL_HOST)
-                    ->pip('explode', '.', '&1')
-                    ->get();
+// $sub_domain = Take::make('https://blog.sebastiaanluca.com/')
+//                     ->pip('parse_url', PHP_URL_HOST)
+//                     ->pip('explode', '.', '&1')
+//                     ->get();
+//
+// var_dump($sub_domain);
 
-var_dump($sub_domain);
-
-$sub_domain = Take::make('.', 'blog.sebastiaanluca.com')
-    // ->pip('parse_url', PHP_URL_HOST)
-    ->pip('explode', '&1', '&2')
-    ->get();
-
-var_dump($sub_domain);
+// $sub_domain = Take::make('http://blog.sebastiaanluca.com')
+//     ->pip('parse_url', PHP_URL_HOST)
+//     ->pip('explode', '.', '$$')
+//     ->get();
+//
+// var_dump($sub_domain);
 
 
 function add($a, $b) {
@@ -67,10 +88,51 @@ function mul($a, $b) {
 }
 
 // (1 + 1 - 3) * 5
-$sum = Take::make(1, 2)
-    ->pip('add', 5, '&2')
-    ->pip('sub', '&1', 3)
-    ->pip('mul', 5)
-    ->get();
+// $sum = Take::make(1, 2)
+//     ->pip('add', 5, '$$')
+//     ->pip('sub', '$$', 3)
+//     ->pip('mul', 5)
+//     ->get();
+//
+// var_dump($sum);
 
-var_dump($sum);
+$makeMiddleWare = function($fun) {
+
+    return function($request) use ($fun) {
+
+        if ($request == 'respond') {
+            return 'Get respond';
+        }
+
+        return $fun($request);
+    };
+
+};
+
+$m1 = $makeMiddleWare(function($request){ return $request;});
+$mx = $makeMiddleWare(function($request){ return 'respond';});
+$m2 = $makeMiddleWare(function($request){ return $request;});
+
+// $middleWare1 = function($request) {
+//
+//     return $request;
+// };
+//
+// $middleWareX = function($request) {
+//
+//     return 'respond';
+// };
+//
+// $middleWare2= function($request) {
+//
+//     return $request;
+// };
+
+
+$r = Take::make('request')
+         ->pip($m1)
+         ->pip($mx)
+         ->pip($m2)
+         ->get();
+
+var_dump($r);
