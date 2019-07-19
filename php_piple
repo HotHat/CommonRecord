@@ -1,11 +1,11 @@
-class Take{
+class Pipe {
     const SUCCESS = 0;
     const ERROR   = 1;
 
     private $result;
 
     public static function make($param) {
-        return new Take($param);
+        return new Pipe($param);
     }
     public function __construct($param)
     {
@@ -16,7 +16,7 @@ class Take{
         return $this->result;
     }
 
-    public function pip() {
+    public function next() {
         $params = func_get_args();
 
         [$code, $result] = $this->result;
@@ -129,10 +129,10 @@ $m2 = $makeMiddleWare(function($request){ return $request;});
 // };
 
 
-$r = Take::make('request')
-         ->pip($m1)
-         ->pip($mx)
-         ->pip($m2)
+$r = Pipe::make('request')
+         ->next($m1)
+         ->next($mx)
+         ->next($m2)
          ->get();
 
 var_dump($r);
