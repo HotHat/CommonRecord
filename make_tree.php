@@ -55,3 +55,26 @@ foreach ($perms as $item) {
 }
 
 print_r($parent);
+
+// version 2
+function make_tree($perms, $child_id = 'id', $parent_id = 'parent_id') {
+    $parent = [];
+    foreach ($perms as $item) {
+        $pid = $item[$parent_id];
+        $cid = $item[$child_id];
+        if (!isset($parent[$pid])) {
+            $parent[$pid] = [ 'id' => $pid, 'item' => [], 'child' => []];
+        }
+        if (!isset($parent[$cid])) {
+            $parent[$cid] = [ 'id' => $pid, 'item' => [], 'child' => []];
+        }
+        $parent[$cid]['item'] = $item;
+        $parent[$pid]['child'][$cid] = &$parent[$cid];
+    }
+    $min = min(array_keys($parent));
+    return $parent[$min]['child'];
+}
+
+
+
+
