@@ -1,16 +1,12 @@
+import kotlin.text.Charsets;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.spec.KeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 
 public class Bbb {
 
@@ -43,6 +39,9 @@ public class Bbb {
         }
         return null;
     }
+
+
+
 
 
 //    private String decrypt(String sdata, String sKey) throws Exception {
@@ -123,42 +122,108 @@ public class Bbb {
 //        return sb.toString();
     }
 
-    public  byte[]  hash2(byte[] password) throws Exception {
+    public  byte[]  hash3(byte[] password, int type) throws Exception {
         MessageDigest md5 = MessageDigest.getInstance("md5");
         byte[] m = new byte[1024];
 
         int i = 0;
 
-        while (i < 32) {
+        int keyIvLength = 32 + 16;
+        byte[] dg = {};
+        while (i < keyIvLength) {
             byte[] data;
             if (i == 0) {
                 data = Arrays.copyOfRange(password,  0,password.length);
             } else {
-                data = new byte[i + password.length];
-
-                System.arraycopy(m,  0, data, 0, i);
-                System.arraycopy(password,  0, data, i, password.length);
-
+                data = new byte[dg.length + password.length];
+                System.arraycopy(dg,  0, data, 0, dg.length);
+                System.arraycopy(password,  0, data, dg.length, password.length);
             }
+
             md5.update(data);
-            byte[] dg = md5.digest();
+            dg = md5.digest();
             System.arraycopy(dg, 0, m, i, dg.length);
 
             i += dg.length;
         }
 
-        byte[] key = Arrays.copyOfRange(m, 0, 32);
-        return key;
+        // key
+        if (type == 1) {
+            return Arrays.copyOfRange(m, 0, 32);
+        }
+        // iv
+        else {
+            return Arrays.copyOfRange(m, 32, 32 + 16);
+        }
     }
 
+
+
+    public  String encrypt3(String plainText, String secret)
+    {
+        try
+        {
+            byte[] secretBytes = secret.getBytes();
+            byte[] iv = hash3(secretBytes, 2);
+            byte[] key = hash(secretBytes, 1);
+            System.out.println("IV");
+            printBytes(iv);
+            System.out.println("KEY");
+            printBytes(key);
+
+
+            // [B@330bedb4
+//            System.out.println(Bbb.bytesToHex(iv));
+
+            byte[] plainBytes= plainText.getBytes(Charsets.UTF_8);
+            System.out.println("plain bytes:");
+            printBytes(plainBytes);
+
+            int rem = plainBytes.length % 16;
+
+            int plainBytesLength = plainBytes.length;
+
+            if (rem > 0) {
+                int nextLength = plainBytes.length + (16 - rem);
+                plainBytes = Arrays.copyOf(plainBytes, nextLength);
+                for (int i = plainBytesLength;  i < nextLength; ++i) {
+                    plainBytes[i] = (byte)0;
+                }
+            }
+
+            printBytes(plainBytes);
+
+            IvParameterSpec ivspec = new IvParameterSpec(iv);
+            SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+            Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivspec);
+            byte[] result = cipher.doFinal(plainBytes);
+
+            System.out.println("result:");
+            printBytes(result);
+
+//            byte[] finalBytes = Arrays.copyOfRange(result, 0, secretBytes.length);
+            byte[] cipherBytes = new byte[16 + plainBytesLength];
+            System.arraycopy(iv, 0, cipherBytes, 0, iv.length);
+            System.arraycopy(result, 0, cipherBytes, iv.length, plainBytesLength);
+
+            printBytes(cipherBytes);
+            return Base64.getEncoder().encodeToString(cipherBytes);
+        }
+        catch (Exception e)
+        {
+            System.out.println("Error while encrypting: " + e.toString());
+        }
+        return null;
+    }
     public String decrypt3(String cipherText, String password) throws Exception {
 
-        byte[] key = hash2(password.getBytes());
+        byte[] key = hash3(password.getBytes(), 1);
 
 
         byte[] cipherBytes = Base64.getDecoder().decode(cipherText.getBytes());
-//        System.out.println("IV: ");
-//        printBytes(cipherBytes);
+        System.out.println("cipher bytes: ");
+        printBytes(cipherBytes);
 
         byte[] iv = Arrays.copyOfRange(cipherBytes, 0, 16);
 
@@ -170,12 +235,16 @@ public class Bbb {
 
         byte[] data = Arrays.copyOfRange(cipherBytes, 16, cipherBytes.length);
 
+        System.out.println("cipher bytes");
+        printBytes(data);
         Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
         SecretKey aesSecret = new SecretKeySpec(key, "AES");
         IvParameterSpec ivps = new IvParameterSpec(iv);
 
         cipher.init(Cipher.DECRYPT_MODE, aesSecret, ivps);
         byte[] result = cipher.doFinal(data);
+        System.out.println("decrypt bytes");
+        printBytes(result);
 
         return new String(result);
     }
@@ -204,12 +273,18 @@ public class Bbb {
 //        System.out.println(encrypt);
 
 //        System.out.println(b.decrypt2("dz0W/n4d/h3cjIf/1UWPJOdGxOTrSRU5rPt58gzKEvGCPpz8PwU=", "SecretKey123456"));
-        byte[] ac = b.hash2("SecretKey".getBytes());
+        byte[] ac = b.hash3("SecretKey".getBytes(), 1);
         b.printBytes(ac);
 
 
-        String plain = b.decrypt3("MjCuBdSt30z1DchOb7kPSZRv0q+yEbdUqgVbjscrInCzPThRL/AxevLMgqVyrQ==", "SecretKey");
+        String plain = b.decrypt3("4QcYLY4cVkyc2+cOd0H8CvdhpXjuGCHR0ZW19+tjGxGHWcVKuVqy6JxYgUPm+Q==", "SecretKey");
         System.out.println(plain);
+
+        System.out.println("new encrypt");
+        String plain2 = b.encrypt3("It's encrypt from shadowsocks!", "SecretKey");
+        System.out.println(plain2);
+        String plain3 = b.decrypt3(plain2, "SecretKey");
+        System.out.println(plain3);
 
     }
 }
