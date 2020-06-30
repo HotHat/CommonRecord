@@ -288,3 +288,45 @@ public class Bbb {
 
     }
 }
+/**
+php implement
+public function test_openssl() {
+        $cipherText = 'AenJu6NhoyOudQFiPbvFD+UIblgsKm7HZbP7/nDg6FaVoJcq9HszP1Wr6kOUtQ==';
+        $enc = base64_decode($cipherText);
+        $key = 'SecretKey';
+        $method = 'aes-256-cfb';
+        $iv = substr($enc, 0, 16);
+        $data = substr($enc, 16, strlen($enc));
+        // $iv = hex2bin(str_replace('-', '', '01-e9-c9-bb-a3-61-a3-23-ae-75-01-62-3d-bb-c5-0f'));
+        $pair = $this->bytes2key($key);
+        dump($pair);
+
+        $key = $pair[0];
+
+        $en = openssl_decrypt($data, $method, $key, OPENSSL_RAW_DATA, $iv);
+        dump($en);
+    }
+    private function bytes2key($password) {
+    # equivalent to OpenSSL's EVP_BytesToKey() with count 1
+    # so that we make the same key and iv as nodejs version
+        $m = '';
+        $i = 0;
+        $len = 32 + 16;
+        $ren = b'';
+        while ($i < $len) {
+            $data = $password;
+            if ($i > 0) {
+                $data = $ren . $password;
+            }
+            $ren = md5($data, true);
+            $i += strlen($ren);
+
+            $m .= $ren;
+        }
+
+        $key = substr($m, 0, 32);
+        $iv = substr($m, 32, $len);
+        return [$key, $iv];
+    }
+
+*/
