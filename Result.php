@@ -22,8 +22,23 @@ class Result {
         return !$this->status;
     }
 
-    public function __invoke() {
-       return $this->result;
+    public function andThen(callable $fn): Result {
+        if ($this->status) {
+            $this->result = $fn($this->result);
+        }
+        return $this;
+    }
+
+    public function orElse(callable $fn): Result
+    {
+        if (!$this->status) {
+            $this->result = $fn($this->result);
+        }
+        return $this;
+    }
+
+    public function unwrap() {
+        return $this->result;
     }
 }
 
@@ -36,5 +51,5 @@ $this->assertTrue($err->isOk() === false);
 $this->assertTrue($ok->isErr() === false);
 $this->assertTrue($err->isErr() === true);
 
-dump($ok());
-dump($err());
+dump($ok->unwrap());
+dump($err->unwrap());
