@@ -1,0 +1,133 @@
+<?php
+// Railway oriented programming
+// https://fsharpforfunandprofit.com/posts/recipe-part2/
+
+class Result { public $val; public function __construct($val) { $this->val = $val; }}
+class Success extends Result {}
+class Error extends Result {}
+
+function bind($fn) {
+    return function (Result $result) use ($fn) {
+        if ($result instanceof Success) {
+            return $fn($result->val);
+        } else {
+            $next = $fn($result->val);
+            $more = $next instanceof Error ? $next->val : '';
+            return new Error($result->val . $more);
+        }
+    };
+}
+function bind2($fn, $twoTrack) {
+    return function () use ($fn, $twoTrack) {
+        if ($twoTrack instanceof Success) {
+            return $fn($twoTrack->val);
+        } else {
+            return $twoTrack;
+        }
+    };
+}
+
+
+function curry($f, $g) {
+    return function($x) use ($f, $g) {
+        return $g($f($x));
+    };
+}
+
+
+class Rop {
+
+    private $input;
+    private $funBinds;
+
+    public function __construct($input)
+    {
+        $this->input = $input;
+    }
+
+    public function get($moreErr=false) {
+        if (empty($this->funBinds)) { return new Success($this->input); }
+
+        if (count($this->funBinds) == 1) {
+            return $this->funBinds[0]($this->input);
+        }
+
+        /**
+         *  [f1, f2, f3, f4] convert to curry($f1, curry($b2, curry($b3, $b4)))
+         */
+        $first = array_shift($this->funBinds);
+        $reverse = array_reverse($this->funBinds);
+        $last = array_shift($reverse);
+
+        if ($moreErr) {
+            $bind = \Closure::fromCallable([$this, 'moreErrorsBind']);
+        } else {
+            $bind =  \Closure::fromCallable([$this, 'oneErrorBind']);
+        }
+
+        $fun = array_reduce($reverse, function ($carry, $item) use ($bind) {
+            return $this->curry($bind($item), $carry);
+        }, $bind($last));
+
+        $lastFun = $this->curry($first, $fun);
+
+        return $lastFun($this->input);
+    }
+
+    public function bind($fn) {
+        $this->funBinds[] = $fn;
+    }
+
+    private function oneErrorBind($fn) {
+        return function (Result $result) use ($fn) {
+            if ($result instanceof Success) {
+                return $fn($result->val);
+            } else {
+                return $result;
+            }
+        };
+    }
+
+    private function moreErrorsBind($fn) {
+        return function (Result $result) use ($fn) {
+            if ($result instanceof Success) {
+                return $fn($result->val);
+            } else {
+                $next = $fn($result->val);
+                $more = $next instanceof Error ? $next->val : '';
+                return new Error($result->val . ';' . $more);
+            }
+        };
+    }
+
+    private function curry($f, $g) {
+        return function($x) use ($f, $g) {
+            return $g($f($x));
+        };
+    }
+}
+
+
+
+$f1 = function ($a) { if ($a != '') { return new Success($a);} else { return new Error('Name must not be blank'); }};
+$f2 = function ($a) { if (strlen($a) < 5) { return new Success($a);} else { return new Error('Name must not be longer than 5'); }};
+$f3 = function ($a) { if ($a[0]  == 'a' ) { return new Success($a);} else { return new Error('Name must start with \'a\''); }};
+$f4 = function ($a) { if ($a[2]  == 'b' ) { return new Success($a);} else { return new Error('Name must start with \'b\''); }};
+
+$b2 = bind($f2);
+$b3 = bind($f3);
+// 3, 2
+// $fn = curry($f1, curry($b2, $b3));
+// $r = $f1('Alice');
+$r = curry($f1, $b2)('Alice');
+echo $r->val;
+
+
+$rop = new Rop('Alice');
+
+$rop->bind($f1);
+$rop->bind($f2);
+$rop->bind($f3);
+$rop->bind($f4);
+$r = $rop->get(true);
+dump($r);
